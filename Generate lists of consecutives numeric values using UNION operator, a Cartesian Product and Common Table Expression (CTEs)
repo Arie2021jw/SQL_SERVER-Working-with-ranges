@@ -1,4 +1,4 @@
-Exercise #1: Generate lists of consecutives numeric values
+Exercise #1: Generate lists of consecutives numeric values using UNION operator, a Cartesian Product and Common Table Expression (CTEs).
 
 
 Solution #1: We create lists of consecutive numeric values using the UNION operator.
@@ -9,20 +9,20 @@ Tables used:
 
 	Query #1: We create a list of consecutive numeric values starting from zero using the UNION operator
 	---------
-SELECT 0 AS Position							                          -- FirstRowWithZeroLevel1
-FROM [AdventureWorks2022].[Person].[BusinessEntity]			    -- FirstRowWithZeroLevel1
+SELECT 0 AS Position							-- FirstRowWithZeroLevel1
+FROM [AdventureWorks2022].[Person].[BusinessEntity]			-- FirstRowWithZeroLevel1
 UNION 
-SELECT BusinessEntityID AS Position					                -- RowTwoOnwardsLevel1
-FROM [AdventureWorks2022].[Person].[BusinessEntity]			    -- RowTwoOnwardsLevel1
-ORDER BY Position
+SELECT BusinessEntityID AS Position					-- RowTwoOnwardsLevel1
+FROM [AdventureWorks2022].[Person].[BusinessEntity]			-- RowTwoOnwardsLevel1
+ORDER BY Position;
 
 
-SELECT 0 AS Position                                        -- FirstRowWithZeroLevel1
-FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			  -- FirstRowWithZeroLevel1
+SELECT 0 AS Position							-- FirstRowWithZeroLevel1
+FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			-- FirstRowWithZeroLevel1
 UNION
-SELECT SalesOrderDetailID AS Position                       -- RowTwoOnwardsLevel1
-FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			  -- RowTwoOnwardsLevel1
-ORDER BY Position
+SELECT SalesOrderDetailID AS Position                       		-- RowTwoOnwardsLevel1
+FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			-- RowTwoOnwardsLevel1
+ORDER BY Position;
 
 
 	-- OUTPUT #1:
@@ -72,7 +72,7 @@ FROM [AdventureWorks2022].[Person].[BusinessEntity]			-- FirstRowWithOneLevel1
 UNION 
 SELECT BusinessEntityID AS Position					-- RowTwoOnwardsLevel1
 FROM [AdventureWorks2022].[Person].[BusinessEntity]			-- RowTwoOnwardsLevel1
-ORDER BY Position
+ORDER BY Position;
 
 
 SELECT 1 AS Position							-- FirstRowWithOneLevel1
@@ -80,7 +80,7 @@ FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			-- FirstRowWithOneLevel1
 UNION
 SELECT SalesOrderDetailID AS Position					-- RowTwoOnwardsLevel1
 FROM [AdventureWorks2022].[Sales].[SalesOrderDetail]			-- RowTwoOnwardsLevel1
-ORDER BY Position
+ORDER BY Position;
 
 
 	-- OUTPUT #1:
@@ -160,7 +160,6 @@ The new table resulting from the Cartesian Product has a dimension of 20,777 row
 
 
 
-
 	Query #2.1: We create a list of consecutive numeric values starting from one using a Cartesian Product
 	---------
 SELECT ROW_NUMBER() OVER (ORDER BY Iteration.Position) AS RowNumber
@@ -223,7 +222,7 @@ WHERE BusinessEntityID + 1 < 20000
 )
 SELECT * 
 FROM ConsecutiveNumbers
-ORDER BY RowNumber
+ORDER BY RowNumber;
 
 
 
@@ -238,7 +237,7 @@ WHERE SalesOrderDetailID + 1 < 100000
 )
 SELECT * 
 FROM ConsecutiveNumbers
-ORDER BY RowNumber
+ORDER BY RowNumber;
 
 
 	-- OUTPUT #1:
