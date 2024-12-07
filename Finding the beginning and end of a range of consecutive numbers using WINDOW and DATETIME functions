@@ -1,7 +1,7 @@
 Exercise #1: Find the beginning and end of a range of consecutive numbers (groups) using the employees hired on the same date.
 
 
-Solution #1: We find the beginning and end of consecutive numbers (groups) by assigning employees into groups based on their hiring date.
+Solution #1: We find the beginning and end of consecutive numbers (groups) by assigning employees into groups based on their hiring date using WINDOW functions.
 Since their are a few employees that changed departments, we will use column "StartDate" from table [AdventureWorks2022].[HumanResources].[EmployeeDepartmentHistory].
 This means that the StartDate is understood as the date an employee started to work on their current department.
 
