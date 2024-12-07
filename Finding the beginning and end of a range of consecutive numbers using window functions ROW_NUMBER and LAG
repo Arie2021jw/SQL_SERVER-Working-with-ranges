@@ -18,7 +18,7 @@ SELECT StartDateGroupNumber.RowNumber				-- EmployeesGroupedByHiringDateLevel4
 , StartDateGroupNumber.JobTitle
 , SUM(StartDateGroupNumber.StartDateGroup) OVER (ORDER BY StartDateGroupNumber.RowNumber) AS NewGroup
 FROM (
-	SELECT DatediffHireDates.RowNumber				-- DatediffHireDatesLevel3
+	SELECT DatediffHireDates.RowNumber					-- DatediffHireDatesLevel3
 	, DatediffHireDates.PreviousStartDate
 	, DatediffHireDates.StartDate
 	, DatediffHireDates.DatediffStartDate
@@ -29,7 +29,7 @@ FROM (
 	, DatediffHireDates.BusinessEntityID
 	, DatediffHireDates.JobTitle
 	FROM (
-		SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber			-- RemovingDuplicatesLevel2
+		SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- RemovingDuplicatesLevel2
 		, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate) AS PreviousStartDate
 		, OriginalTables.StartDate
 		, DATEDIFF(DAY, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate), OriginalTables.StartDate) AS DatediffStartDate
@@ -38,7 +38,7 @@ FROM (
 		, OriginalTables.DepartmentID
 		, OriginalTables.DeparmentName
 		FROM (
-			SELECT										-- OriginalTablesLevel1
+			SELECT												-- OriginalTablesLevel1
 			ROW_NUMBER() OVER (PARTITION BY Employee.BusinessEntityID ORDER BY Employee.BusinessEntityID ASC, EmployeeDepartmentHistory.StartDate DESC) AS RowNumberRemovingDuplicates
 			, Employee.BusinessEntityID	
 			, Employee.JobTitle
@@ -51,11 +51,11 @@ FROM (
 				ON Employee.BusinessEntityID = EmployeeDepartmentHistory.BusinessEntityID
 			LEFT JOIN [AdventureWorks2022].[HumanResources].[Department] AS Department
 				ON EmployeeDepartmentHistory.DepartmentID = Department.DepartmentID	
-			WHERE Employee.BusinessEntityID <> 1						-- OriginalTablesLevel1
+			WHERE Employee.BusinessEntityID <> 1								-- OriginalTablesLevel1
 		) AS OriginalTables
 		WHERE OriginalTables.RowNumberRemovingDuplicates = 1				-- RemovingDuplicatesLevel2
-	) AS DatediffHireDates								-- DatediffHireDatesLevel3
-) AS StartDateGroupNumber						-- EmployeesGroupedByHiringDateLevel4
+	) AS DatediffHireDates							-- DatediffHireDatesLevel3
+) AS StartDateGroupNumber					-- EmployeesGroupedByHiringDateLevel4
 
 
 	-- OUTPUT
@@ -109,12 +109,12 @@ RowNumber	StartDate	BusinessEntityID	JobTitle				NewGroup
 
 
 
+
 Below are the queries used step-by-step for this solution.
 
 	Query #1.1: We remove the (duplicated) BusinessEntityIDs for the employees that changed departments, in order to retrieve the list of (unique BusinessEntityIDs) employees ordered by their "StartDate"
 	-----------
-
-SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber				-- RemovingDuplicatesLevel2
+SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- RemovingDuplicatesLevel2
 , OriginalTables.BusinessEntityID	
 , OriginalTables.JobTitle
 , OriginalTables.DepartmentID
@@ -137,7 +137,7 @@ FROM (
 	WHERE Employee.BusinessEntityID <> 1							-- OriginalTablesLevel1
 ) AS OriginalTables
 WHERE OriginalTables.RowNumberRemovingDuplicates = 1
-ORDER BY OriginalTables.StartDate								-- RemovingDuplicatesLevel2
+ORDER BY OriginalTables.StartDate							-- RemovingDuplicatesLevel2
 
 
 	-- OUTPUT
@@ -162,7 +162,6 @@ RowNumber	BusinessEntityID	JobTitle			DepartmentID	DepartmentName		StartDate
 
 
 
-
 	Query #1.2: We add column "PreviousStartDate" that will be used to calculate number of days between consecutive StartDates for column "DatediffStartDate" using window functions LAG and DATEDIFF
 	-----------
 SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- CalculateNumDaysBetweenConsecutiveStartDatesLevel3
@@ -174,7 +173,7 @@ SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- Ca
 , OriginalTables.DepartmentID
 , OriginalTables.DepartmentName
 FROM (
-	SELECT									-- OriginalTablesLevel1
+	SELECT												-- OriginalTablesLevel1
 	ROW_NUMBER() OVER (PARTITION BY Employee.BusinessEntityID	ORDER BY Employee.BusinessEntityID ASC, EmployeeDepartmentHistory.StartDate DESC) AS RowNumberRemovingDuplicates
 	, Employee.BusinessEntityID	
 	, Employee.JobTitle
@@ -187,46 +186,45 @@ FROM (
 		ON Employee.BusinessEntityID = EmployeeDepartmentHistory.BusinessEntityID
 	LEFT JOIN [AdventureWorks2022].[HumanResources].[Department] AS Department
 		ON EmployeeDepartmentHistory.DepartmentID = Department.DepartmentID	
-	WHERE Employee.BusinessEntityID <> 1							-- OriginalTablesLevel1
+	WHERE Employee.BusinessEntityID <> 1								-- OriginalTablesLevel1
 ) AS OriginalTables
-WHERE OriginalTables.RowNumberRemovingDuplicates = 1	-- RemovingDuplicatesLevel2 /  CalculateNumDaysBetweenConsecutiveStartDatesLevel3
+WHERE OriginalTables.RowNumberRemovingDuplicates = 1				-- RemovingDuplicatesLevel2 /  CalculateNumDaysBetweenConsecutiveStartDatesLevel3
 
 
 	-- OUTPUT
-RowNumber	PreviousStartDate	StartDate	DatediffStartDate	BusinessEntityID	JobTitle	DepartmentID	DepartmentName
-1		NULL			2006-06-30	NULL			28	Production Technician - WC60	7	Production
-2		2006-06-30		2007-01-26	210			17	Marketing Assistant		4	Marketing
-3		2007-01-26		2007-11-11	289			3	Engineering Manager		1	Engineering
-4		2007-11-11		2007-12-11	30			12	Tool Designer			2	Tool Design
-5		2007-12-11		2007-12-26	15			40	Production Supervisor - WC60	7	Production
-6		2007-12-26		2008-01-06	11			48	Production Technician - WC10	7	Production
-7		2008-01-06		2008-01-06	0			5	Design Engineer			1	Engineering
-8		2008-01-06		2008-01-07	1			49	Production Technician - WC10	7	Production
-.........................................................................................................TRUNCATED RESULTS ......
-18		2008-03-28		2008-12-01	248			72	Production Technician - WC30	7	Production
-19		2008-12-01		2008-12-01	0			26	Production Control Manager	8	Production Control
-20		2008-12-01		2008-12-02	1			167	Production Technician - WC30	7	Production
-21		2008-12-02		2008-12-02	0			206	Production Technician - WC45	7	Production
-22		2008-12-02		2008-12-02	0			207	Production Technician - WC45	7	Production
-23		2008-12-02		2008-12-03	1			102	Production Supervisor - WC10	7	Production
-.........................................................................................................TRUNCATED RESULTS ......
-271		2011-02-15		2011-05-31	105			275	Sales Representative		3	Sales
-272		2011-05-31		2011-05-31	0			276	Sales Representative		3	Sales
-273		2011-05-31		2011-05-31	0			277	Sales Representative		3	Sales
-274		2011-05-31		2011-05-31	0			278	Sales Representative		3	Sales
-275		2011-05-31		2011-05-31	0			279	Sales Representative		3	Sales
-276		2011-05-31		2011-05-31	0			280	Sales Representative		3	Sales
-277		2011-05-31		2011-05-31	0			281	Sales Representative		3	Sales
-278		2011-05-31		2011-05-31	0			282	Sales Representative		3	Sales
-279		2011-05-31		2011-05-31	0			283	Sales Representative		3	Sales
-280		2011-05-31		2011-09-01	93			224	Scheduling Assistant		8	Production Control
-.........................................................................................................TRUNCATED RESULTS ......
-287		2013-03-14		2013-05-30	77			286	Sales Representative	3		Sales
-288		2013-05-30		2013-05-30	0			288	Sales Representative	3		Sales
-289		2013-05-30		2013-11-14	168			234	Chief Financial Officer	16		Executive
+RowNumber	PreviousStartDate	StartDate	DatediffStartDate	BusinessEntityID	JobTitle				DepartmentID	DepartmentName
+1		NULL			2006-06-30	NULL			28			Production Technician - WC60		7		Production
+2		2006-06-30		2007-01-26	210			17			Marketing Assistant			4		Marketing
+3		2007-01-26		2007-11-11	289			3			Engineering Manager			1		Engineering
+4		2007-11-11		2007-12-11	30			12			Tool Designer				2		Tool Design
+5		2007-12-11		2007-12-26	15			40			Production Supervisor - WC60		7		Production
+6		2007-12-26		2008-01-06	11			48			Production Technician - WC10		7		Production
+7		2008-01-06		2008-01-06	0			5			Design Engineer				1		Engineering
+8		2008-01-06		2008-01-07	1			49			Production Technician - WC10		7		Production
+...................................................................................................................................................................................TRUNCATED RESULTS ......
+18		2008-03-28		2008-12-01	248			72			Production Technician - WC30		7		Production
+19		2008-12-01		2008-12-01	0			26			Production Control Manager		8		Production Control
+20		2008-12-01		2008-12-02	1			167			Production Technician - WC30		7		Production
+21		2008-12-02		2008-12-02	0			206			Production Technician - WC45		7		Production
+22		2008-12-02		2008-12-02	0			207			Production Technician - WC45		7		Production
+23		2008-12-02		2008-12-03	1			102			Production Supervisor - WC10		7		Production
+...................................................................................................................................................................................TRUNCATED RESULTS ......
+271		2011-02-15		2011-05-31	105			275			Sales Representative			3		Sales
+272		2011-05-31		2011-05-31	0			276			Sales Representative			3		Sales
+273		2011-05-31		2011-05-31	0			277			Sales Representative			3		Sales
+274		2011-05-31		2011-05-31	0			278			Sales Representative			3		Sales
+275		2011-05-31		2011-05-31	0			279			Sales Representative			3		Sales
+276		2011-05-31		2011-05-31	0			280			Sales Representative			3		Sales
+277		2011-05-31		2011-05-31	0			281			Sales Representative			3		Sales
+278		2011-05-31		2011-05-31	0			282			Sales Representative			3		Sales
+279		2011-05-31		2011-05-31	0			283			Sales Representative			3		Sales
+280		2011-05-31		2011-09-01	93			224			Scheduling Assistant			8		Production Control
+...................................................................................................................................................................................TRUNCATED RESULTS ......
+287		2013-03-14		2013-05-30	77			286			Sales Representative			3		Sales
+288		2013-05-30		2013-05-30	0			288			Sales Representative			3		Sales
+289		2013-05-30		2013-11-14	168			234			Chief Financial Officer			16		Executive
 (end of results)
 (289 rows affected)
-
 
 
 
@@ -237,7 +235,7 @@ a) "1" means the start of a new group with a different StartDate (compared to th
 b) "0" means the same group with the same StartDate from the previous row
 	-----------
 
-SELECT DatediffHireDates.RowNumber			-- DatediffHireDatesLevel4
+SELECT DatediffHireDates.RowNumber						-- DatediffHireDatesLevel4
 , DatediffHireDates.PreviousStartDate
 , DatediffHireDates.StartDate
 , DatediffHireDates.DatediffStartDate
@@ -248,7 +246,7 @@ SELECT DatediffHireDates.RowNumber			-- DatediffHireDatesLevel4
 , DatediffHireDates.BusinessEntityID
 , DatediffHireDates.JobTitle
 FROM (
-	SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber	-- CalculateNumDaysBetweenConsecutiveStartDatesLevel3
+	SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- CalculateNumDaysBetweenConsecutiveStartDatesLevel3
 	, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate) AS PreviousStartDate
 	, OriginalTables.StartDate
 	, DATEDIFF(DAY, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate), OriginalTables.StartDate) AS DatediffStartDate
@@ -257,7 +255,7 @@ FROM (
 	, OriginalTables.DepartmentID
 	, OriginalTables.DepartmentName
 	FROM (
-		SELECT									-- OriginalTablesLevel1
+		SELECT												-- OriginalTablesLevel1
 		ROW_NUMBER() OVER (PARTITION BY Employee.BusinessEntityID	ORDER BY Employee.BusinessEntityID ASC, EmployeeDepartmentHistory.StartDate DESC) AS RowNumberRemovingDuplicates
 		, Employee.BusinessEntityID	
 		, Employee.JobTitle
@@ -270,9 +268,9 @@ FROM (
 			ON Employee.BusinessEntityID = EmployeeDepartmentHistory.BusinessEntityID
 		LEFT JOIN [AdventureWorks2022].[HumanResources].[Department] AS Department
 			ON EmployeeDepartmentHistory.DepartmentID = Department.DepartmentID	
-		WHERE Employee.BusinessEntityID <> 1				-- OriginalTablesLevel1
+		WHERE Employee.BusinessEntityID <> 1								-- OriginalTablesLevel1
 	) AS OriginalTables
-	WHERE OriginalTables.RowNumberRemovingDuplicates = 1	-- RemovingDuplicatesLevel2 / CalculateNumDaysBetweenConsecutiveStartDatesLevel3
+	WHERE OriginalTables.RowNumberRemovingDuplicates = 1					-- RemovingDuplicatesLevel2 / CalculateNumDaysBetweenConsecutiveStartDatesLevel3
 ) AS DatediffHireDates								-- DatediffHireDatesLevel4
 
 
@@ -286,7 +284,7 @@ RowNumber	PreviousStartDate	StartDate	DatediffStartDate	StartDateGroup	BusinessE
 6		2007-12-26		2008-01-06	11			1		48			Production Technician - WC10
 7		2008-01-06		2008-01-06	0			0		5			Design Engineer
 8		2008-01-06		2008-01-07	1			1		49			Production Technician - WC10
-.........................................................................................................TRUNCATED RESULTS ......
+........................................................................................................................................................TRUNCATED RESULTS ......
 61		2008-12-21		2008-12-22	1			1		87			Production Supervisor - WC10
 62		2008-12-22		2008-12-22	0			0		129			Production Technician - WC40
 63		2008-12-22		2008-12-23	1			1		154			Production Technician - WC20
@@ -306,7 +304,7 @@ RowNumber	PreviousStartDate	StartDate	DatediffStartDate	StartDateGroup	BusinessE
 77		2008-12-28		2008-12-29	1			1		32			Production Technician - WC60
 78		2008-12-29		2008-12-29	0			0		8			Research and Development Engineer
 79		2008-12-29		2008-12-31	2			1		197			Production Technician - WC40
-.........................................................................................................TRUNCATED RESULTS ......
+........................................................................................................................................................TRUNCATED RESULTS ......
 271		2011-02-15		2011-05-31	105			1		275			Sales Representative
 272		2011-05-31		2011-05-31	0			0		276			Sales Representative
 273		2011-05-31		2011-05-31	0			0		277			Sales Representative
@@ -317,7 +315,7 @@ RowNumber	PreviousStartDate	StartDate	DatediffStartDate	StartDateGroup	BusinessE
 278		2011-05-31		2011-05-31	0			0		282			Sales Representative
 279		2011-05-31		2011-05-31	0			0		283			Sales Representative
 280		2011-05-31		2011-09-01	93			1		224			Scheduling Assistant
-.........................................................................................................TRUNCATED RESULTS ......
+........................................................................................................................................................TRUNCATED RESULTS ......
 286		2012-09-30		2013-03-14	165			1		285			Pacific Sales Manager
 287		2013-03-14		2013-05-30	77			1		286			Sales Representative
 288		2013-05-30		2013-05-30	0			0		288			Sales Representative
@@ -328,8 +326,7 @@ RowNumber	PreviousStartDate	StartDate	DatediffStartDate	StartDateGroup	BusinessE
 
 
 
-
-	Query #1.4: We add column "NewGroup" to group together the employees having the same StartDate
+	Query #1.4: We add column "NewGroup" and use the window functions SUM to group together the employees having the same StartDate
 	-----------
 SELECT StartDateGroupNumber.RowNumber				-- EmployeesGroupedByHiringDateLevel5
 , StartDateGroupNumber.StartDate
@@ -337,7 +334,7 @@ SELECT StartDateGroupNumber.RowNumber				-- EmployeesGroupedByHiringDateLevel5
 , StartDateGroupNumber.JobTitle
 , SUM(StartDateGroupNumber.StartDateGroup) OVER (ORDER BY StartDateGroupNumber.RowNumber) AS NewGroup
 FROM (
-	SELECT DatediffHireDates.RowNumber			-- DatediffHireDatesLevel4
+	SELECT DatediffHireDates.RowNumber					-- DatediffHireDatesLevel4
 	, DatediffHireDates.PreviousStartDate
 	, DatediffHireDates.StartDate
 	, DatediffHireDates.DatediffStartDate
@@ -348,7 +345,7 @@ FROM (
 	, DatediffHireDates.BusinessEntityID
 	, DatediffHireDates.JobTitle
 	FROM (
-		SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber	-- RemovingDuplicatesLevel2
+		SELECT ROW_NUMBER() OVER (ORDER BY OriginalTables.StartDate) AS RowNumber		-- RemovingDuplicatesLevel2
 		, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate) AS PreviousStartDate
 		, OriginalTables.StartDate
 		, DATEDIFF(DAY, LAG(OriginalTables.StartDate) OVER (ORDER BY OriginalTables.StartDate), OriginalTables.StartDate) AS DatediffStartDate
@@ -357,7 +354,7 @@ FROM (
 		, OriginalTables.DepartmentID
 		, OriginalTables.DeparmentName
 		FROM (
-			SELECT									-- OriginalTablesLevel1
+			SELECT												-- OriginalTablesLevel1
 			ROW_NUMBER() OVER (PARTITION BY Employee.BusinessEntityID	ORDER BY Employee.BusinessEntityID ASC, EmployeeDepartmentHistory.StartDate DESC) AS RowNumberRemovingDuplicates
 			, Employee.BusinessEntityID	
 			, Employee.JobTitle
@@ -370,14 +367,14 @@ FROM (
 				ON Employee.BusinessEntityID = EmployeeDepartmentHistory.BusinessEntityID
 			LEFT JOIN [AdventureWorks2022].[HumanResources].[Department] AS Department
 				ON EmployeeDepartmentHistory.DepartmentID = Department.DepartmentID	
-			WHERE Employee.BusinessEntityID <> 1					-- OriginalTablesLevel1
+			WHERE Employee.BusinessEntityID <> 1								-- OriginalTablesLevel1
 		) AS OriginalTables
-		WHERE OriginalTables.RowNumberRemovingDuplicates = 1	-- RemovingDuplicatesLevel2 / CalculateNumDaysBetweenConsecutiveStartDatesLevel3
-	) AS DatediffHireDates						-- DatediffHireDatesLevel4
-) AS StartDateGroupNumber						-- EmployeesGroupedByHiringDateLevel5
+		WHERE OriginalTables.RowNumberRemovingDuplicates = 1					-- RemovingDuplicatesLevel2 / CalculateNumDaysBetweenConsecutiveStartDatesLevel3
+	) AS DatediffHireDates							-- DatediffHireDatesLevel4
+) AS StartDateGroupNumber					-- EmployeesGroupedByHiringDateLevel5
 
 
-
+	-- OUTPUT
 RowNumber	StartDate	BusinessEntityID	JobTitle				NewGroup
 1		2006-06-30	28			Production Technician - WC60		1
 2		2007-01-26	17			Marketing Assistant			2
